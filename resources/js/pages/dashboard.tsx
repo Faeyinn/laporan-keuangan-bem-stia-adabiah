@@ -1,12 +1,37 @@
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import AppLayout from '@/layouts/app-layout';
 import api from '@/lib/api';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
 import { ArcElement, Chart as ChartJS, Legend, Tooltip } from 'chart.js';
-import { useEffect, useState } from 'react';
+import {
+    Activity,
+    ArrowDownRight,
+    ArrowUpRight,
+    BookHeart,
+    Calendar,
+    Handshake,
+    LayoutGrid,
+    Megaphone,
+    MoreHorizontal,
+    TrendingDown,
+    TrendingUp,
+    Users,
+    Wallet,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Doughnut } from 'react-chartjs-2';
+
 import { renderToStaticMarkup } from 'react-dom/server';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -24,14 +49,6 @@ interface FinancialReportItem {
     pengeluaran: number;
 }
 
-import {
-    BookHeart,
-    Handshake,
-    LayoutGrid,
-    Megaphone,
-    Users,
-} from 'lucide-react';
-
 function getDivisionIcon(name: string) {
     const normalized = name.toUpperCase();
     if (normalized.includes('PSDM')) return Users;
@@ -41,13 +58,26 @@ function getDivisionIcon(name: string) {
     return LayoutGrid;
 }
 
+interface Transaksi {
+    id: number;
+    tanggal: string;
+    deskripsi: string;
+    nominal: number;
+    tipe: 'pemasukan' | 'pengeluaran';
+    divisi?: { nama: string };
+    kategori_transaksi?: { nama: string };
+    user?: { name: string };
+}
+
 const centerLogosPlugin = {
     id: 'centerLogos',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     afterDatasetDraw(chart: any, args: any, options: any) {
         const { ctx } = chart;
         const meta = args.meta;
         const images = options.images || {};
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         meta.data.forEach((element: any, index: number) => {
             const label = chart.data.labels[index];
             const image = images[label];
@@ -70,23 +100,80 @@ const centerLogosPlugin = {
     },
 };
 
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+
+// ... (existing imports)
+
 function FinancialChart({
     financialReport,
+    transaksi,
 }: {
     financialReport: FinancialReportItem[];
+    transaksi: Transaksi[];
 }) {
     const [type, setType] = useState<'pemasukan' | 'pengeluaran'>(
         'pengeluaran',
+    );
+    const [selectedMonth, setSelectedMonth] = useState<string>(
+        String(new Date().getMonth()),
     );
     const [chartImages, setChartImages] = useState<
         Record<string, HTMLImageElement>
     >({});
 
+    // Filter and process data based on selection
+    const filteredData = useMemo(() => {
+        // If we want to show specific month from transactions
+        if (transaksi.length > 0) {
+            const currentYear = new Date().getFullYear(); // Assuming current year for simplicity, or could add year selector
+            const targetMonth = parseInt(selectedMonth);
+
+            // Group by division
+            const divisionMap = new Map<
+                string,
+                { pemasukan: number; pengeluaran: number }
+            >();
+
+            transaksi.forEach((t) => {
+                const date = new Date(t.tanggal);
+                if (
+                    date.getMonth() === targetMonth &&
+                    date.getFullYear() === currentYear
+                ) {
+                    const divName = t.divisi?.nama || 'Lainnya';
+                    const current = divisionMap.get(divName) || {
+                        pemasukan: 0,
+                        pengeluaran: 0,
+                    };
+
+                    if (t.tipe === 'pemasukan') {
+                        current.pemasukan += Number(t.nominal);
+                    } else {
+                        current.pengeluaran += Number(t.nominal);
+                    }
+                    divisionMap.set(divName, current);
+                }
+            });
+
+            return Array.from(divisionMap.entries()).map(([name, vals]) => ({
+                name,
+                ...vals,
+            }));
+        }
+        return financialReport;
+    }, [transaksi, selectedMonth, financialReport]);
+
     useEffect(() => {
         const loadImages = async () => {
             const newImages: Record<string, HTMLImageElement> = {};
             await Promise.all(
-                financialReport.map(async (item) => {
+                filteredData.map(async (item) => {
                     const Icon = getDivisionIcon(item.name);
                     const svgString = renderToStaticMarkup(
                         <Icon size={24} color="#ffffff" strokeWidth={2.5} />,
@@ -104,10 +191,10 @@ function FinancialChart({
             setChartImages(newImages);
         };
 
-        if (financialReport.length) {
+        if (filteredData.length) {
             loadImages();
         }
-    }, [financialReport]);
+    }, [filteredData]);
 
     const colors = [
         '#10b981', // emerald-500
@@ -123,11 +210,11 @@ function FinancialChart({
     ];
 
     const data = {
-        labels: financialReport.map((item) => item.name),
+        labels: filteredData.map((item) => item.name),
         datasets: [
             {
                 label: type === 'pemasukan' ? 'Pemasukan' : 'Pengeluaran',
-                data: financialReport.map((item) =>
+                data: filteredData.map((item) =>
                     type === 'pemasukan' ? item.pemasukan : item.pengeluaran,
                 ),
                 backgroundColor: colors,
@@ -145,6 +232,7 @@ function FinancialChart({
             },
             tooltip: {
                 callbacks: {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     label: function (context: any) {
                         let label = context.label || '';
                         if (label) {
@@ -168,25 +256,60 @@ function FinancialChart({
         cutout: '75%', // Thinner ring to have more space in center
     };
 
-    const hasData = financialReport.some(
+    const hasData = filteredData.some(
         (item) =>
             (type === 'pemasukan' ? item.pemasukan : item.pengeluaran) > 0,
     );
 
-    const total = financialReport.reduce(
+    const total = filteredData.reduce(
         (acc, item) =>
             acc + (type === 'pemasukan' ? item.pemasukan : item.pengeluaran),
         0,
     );
 
+    const months = [
+        'Januari',
+        'Februari',
+        'Maret',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Agustus',
+        'September',
+        'Oktober',
+        'November',
+        'Desember',
+    ];
+
     return (
         <Card className="flex h-full flex-col">
             <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-medium">
-                        Laporan Per Divisi
-                    </CardTitle>
-                    <div className="flex rounded-lg bg-muted p-1">
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-base font-medium">
+                            Laporan Per Divisi
+                        </CardTitle>
+                        <Select
+                            value={selectedMonth}
+                            onValueChange={setSelectedMonth}
+                        >
+                            <SelectTrigger className="h-8 w-[120px]">
+                                <SelectValue placeholder="Pilih Bulan" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {months.map((month, index) => (
+                                    <SelectItem
+                                        key={index}
+                                        value={String(index)}
+                                    >
+                                        {month}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="flex self-start rounded-lg bg-muted p-1">
                         <button
                             onClick={() => setType('pemasukan')}
                             className={`rounded-md px-3 py-1 text-xs font-medium transition-all ${
@@ -236,7 +359,7 @@ function FinancialChart({
 
                         {/* Custom Legend with Icons */}
                         <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-2">
-                            {financialReport.map((item, index) => {
+                            {filteredData.map((item, index) => {
                                 const Icon = getDivisionIcon(item.name);
                                 const value =
                                     type === 'pemasukan'
@@ -282,7 +405,8 @@ function FinancialChart({
                     </>
                 ) : (
                     <div className="py-10 text-center text-sm text-muted-foreground">
-                        Belum ada data transaksi {type}.
+                        Belum ada data transaksi {type} pada bulan{' '}
+                        {months[parseInt(selectedMonth)]}.
                     </div>
                 )}
             </CardContent>
@@ -295,7 +419,7 @@ export default function Dashboard({
 }: {
     financialReport?: FinancialReportItem[];
 }) {
-    const [transaksi, setTransaksi] = useState<any[]>([]);
+    const [transaksi, setTransaksi] = useState<Transaksi[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -320,137 +444,361 @@ export default function Dashboard({
     );
     const saldo = pemasukan - pengeluaran;
 
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+
+    const pemasukanBulanIni = transaksi.reduce((total, t) => {
+        const d = new Date(t.tanggal);
+        if (
+            t.tipe === 'pemasukan' &&
+            d.getMonth() === currentMonth &&
+            d.getFullYear() === currentYear
+        ) {
+            return total + Number(t.nominal);
+        }
+        return total;
+    }, 0);
+
+    const pengeluaranBulanIni = transaksi.reduce((total, t) => {
+        const d = new Date(t.tanggal);
+        if (
+            t.tipe === 'pengeluaran' &&
+            d.getMonth() === currentMonth &&
+            d.getFullYear() === currentYear
+        ) {
+            return total + Number(t.nominal);
+        }
+        return total;
+    }, 0);
+
+    const saldoBulanIni = pemasukanBulanIni - pengeluaranBulanIni;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
 
-            <div className="flex flex-col gap-6 p-4 sm:p-6">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Pemasukan</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-semibold text-green-600">
-                                Rp {pemasukan.toLocaleString()}
-                            </div>
-                            <div className="mt-1 text-sm text-gray-500">
-                                Total pemasukan dari transaksi
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Pengeluaran</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-semibold text-red-600">
-                                Rp {pengeluaran.toLocaleString()}
-                            </div>
-                            <div className="mt-1 text-sm text-gray-500">
-                                Total pengeluaran
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Saldo</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-semibold text-gray-900">
-                                Rp {saldo.toLocaleString()}
-                            </div>
-                            <div className="mt-1 text-sm text-gray-500">
-                                Saldo saat ini
-                            </div>
-                        </CardContent>
-                    </Card>
+            <div className="flex flex-col gap-8 p-4 sm:p-8">
+                {/* Header Section */}
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                            Dashboard Keuangan
+                        </h1>
+                        <p className="text-muted-foreground">
+                            Ringkasan dan analisis keuangan BEM Adabiah.
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="hidden sm:flex"
+                        >
+                            <Calendar className="mr-2 h-4 w-4" />
+                            {new Date().toLocaleDateString('id-ID', {
+                                weekday: 'long',
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric',
+                            })}
+                        </Button>
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-                    <div className="lg:col-span-2">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Transaksi Terbaru</CardTitle>
+                {/* Main Stats Grid */}
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {/* Income Section */}
+                    <div className="space-y-4">
+                        <Card className="overflow-hidden decoration-emerald-500/20 shadow-sm transition-all hover:shadow-md">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    Total Pemasukan
+                                </CardTitle>
+                                <div className="rounded-full bg-emerald-100 p-2 dark:bg-emerald-900/30">
+                                    <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-foreground">
+                                    Rp {pemasukan.toLocaleString('id-ID')}
+                                </div>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    Akumulasi semua dana masuk
+                                </p>
+                            </CardContent>
+                        </Card>
+                        <Card className="overflow-hidden shadow-sm transition-all hover:shadow-md">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    Pemasukan Bulan Ini
+                                </CardTitle>
+                                <div className="rounded-full bg-emerald-100 p-2 dark:bg-emerald-900/30">
+                                    <ArrowUpRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                                    Rp{' '}
+                                    {pemasukanBulanIni.toLocaleString('id-ID')}
+                                </div>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    Bulan{' '}
+                                    {new Date().toLocaleDateString('id-ID', {
+                                        month: 'long',
+                                    })}
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Expense Section */}
+                    <div className="space-y-4">
+                        <Card className="overflow-hidden shadow-sm transition-all hover:shadow-md">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    Total Pengeluaran
+                                </CardTitle>
+                                <div className="rounded-full bg-rose-100 p-2 dark:bg-rose-900/30">
+                                    <TrendingDown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-foreground">
+                                    Rp {pengeluaran.toLocaleString('id-ID')}
+                                </div>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    Akumulasi semua dana keluar
+                                </p>
+                            </CardContent>
+                        </Card>
+                        <Card className="overflow-hidden shadow-sm transition-all hover:shadow-md">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    Pengeluaran Bulan Ini
+                                </CardTitle>
+                                <div className="rounded-full bg-rose-100 p-2 dark:bg-rose-900/30">
+                                    <ArrowDownRight className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">
+                                    Rp{' '}
+                                    {pengeluaranBulanIni.toLocaleString(
+                                        'id-ID',
+                                    )}
+                                </div>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    Bulan{' '}
+                                    {new Date().toLocaleDateString('id-ID', {
+                                        month: 'long',
+                                    })}
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Balance Section */}
+                    <div className="space-y-4">
+                        <Card className="overflow-hidden border-primary/20 bg-primary/5 shadow-sm transition-all hover:shadow-md">
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium text-foreground">
+                                    Saldo Total
+                                </CardTitle>
+                                <div className="rounded-full bg-primary/20 p-2">
+                                    <Wallet className="h-4 w-4 text-primary" />
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold text-foreground">
+                                    Rp {saldo.toLocaleString('id-ID')}
+                                </div>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    Dana tersedia saat ini
+                                </p>
+                            </CardContent>
+                        </Card>
+                        <Card
+                            className={`overflow-hidden shadow-sm transition-all hover:shadow-md ${saldoBulanIni < 0 ? 'border-rose-200 bg-rose-50/30' : ''}`}
+                        >
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium text-muted-foreground">
+                                    Arus Kas Bulan Ini
+                                </CardTitle>
+                                <div className="rounded-full bg-slate-100 p-2 dark:bg-slate-800">
+                                    <Activity className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <div
+                                    className={`text-2xl font-bold ${saldoBulanIni >= 0 ? 'text-foreground' : 'text-rose-600'}`}
+                                >
+                                    {saldoBulanIni > 0 ? '+' : ''}Rp{' '}
+                                    {saldoBulanIni.toLocaleString('id-ID')}
+                                </div>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    Selisih masuk - keluar bulan ini
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-7">
+                    {/* Recent Transactions Table */}
+                    <div className="lg:col-span-5">
+                        <Card className="h-full shadow-sm">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle>Transaksi Terbaru</CardTitle>
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                        8 transaksi terakhir yang tercatat.
+                                    </p>
+                                </div>
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="as-link gap-1"
+                                    onClick={() =>
+                                        (window.location.href = '/laporan')
+                                    }
+                                >
+                                    Lihat Semua{' '}
+                                    <ArrowUpRight className="h-4 w-4" />
+                                </Button>
                             </CardHeader>
                             <CardContent>
                                 {loading ? (
-                                    <div className="py-8 text-center text-gray-400">
-                                        Loading...
+                                    <div className="flex h-[300px] flex-col items-center justify-center gap-2 text-muted-foreground">
+                                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                                        <p className="text-sm">
+                                            Memuat data...
+                                        </p>
                                     </div>
                                 ) : (
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full divide-y divide-gray-200">
+                                    <div className="overflow-auto">
+                                        <table className="w-full text-sm">
                                             <thead>
-                                                <tr>
-                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                                                        Tanggal
+                                                <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                                    <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                                                        Detail
                                                     </th>
-                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                                                        Divisi
-                                                    </th>
-                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                                    <th className="hidden h-12 px-4 text-left align-middle font-medium text-muted-foreground sm:table-cell">
                                                         Kategori
                                                     </th>
-                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                                                        Tipe
-                                                    </th>
-                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                                    <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
                                                         Nominal
                                                     </th>
+                                                    <th className="h-12 w-[50px] px-4 text-right align-middle font-medium text-muted-foreground"></th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {transaksi.length === 0 ? (
                                                     <tr>
                                                         <td
-                                                            colSpan={5}
-                                                            className="py-8 text-center text-gray-400"
+                                                            colSpan={4}
+                                                            className="h-24 text-center text-muted-foreground"
                                                         >
-                                                            Tidak ada transaksi
+                                                            Belum ada data
+                                                            transaksi.
                                                         </td>
                                                     </tr>
                                                 ) : (
                                                     transaksi
                                                         .slice(0, 8)
-                                                        .map((trx: any) => (
-                                                            <tr key={trx.id}>
-                                                                <td className="px-4 py-2">
-                                                                    {
-                                                                        trx.tanggal
-                                                                    }
+                                                        .map((trx) => (
+                                                            <tr
+                                                                key={trx.id}
+                                                                className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                                                            >
+                                                                <td className="p-4 align-middle">
+                                                                    <div className="flex flex-col">
+                                                                        <span className="max-w-[200px] truncate font-medium sm:max-w-[300px]">
+                                                                            {trx.deskripsi ||
+                                                                                'Tanpa Keterangan'}
+                                                                        </span>
+                                                                        <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                                                                            <span>
+                                                                                {
+                                                                                    trx.tanggal
+                                                                                }
+                                                                            </span>
+                                                                            <span>
+                                                                                •
+                                                                            </span>
+                                                                            <span className="capitalize">
+                                                                                {trx.user?.name?.split(
+                                                                                    ' ',
+                                                                                )[0] ||
+                                                                                    'System'}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
                                                                 </td>
-                                                                <td className="px-4 py-2">
-                                                                    {
-                                                                        trx
-                                                                            .divisi
-                                                                            ?.nama
-                                                                    }
+                                                                <td className="hidden p-4 align-middle sm:table-cell">
+                                                                    <div className="flex flex-col gap-1">
+                                                                        <Badge
+                                                                            variant="secondary"
+                                                                            className="w-fit font-normal"
+                                                                        >
+                                                                            {
+                                                                                trx
+                                                                                    .divisi
+                                                                                    ?.nama
+                                                                            }
+                                                                        </Badge>
+                                                                        <span className="px-1 text-xs text-muted-foreground">
+                                                                            {
+                                                                                trx
+                                                                                    .kategori_transaksi
+                                                                                    ?.nama
+                                                                            }
+                                                                        </span>
+                                                                    </div>
                                                                 </td>
-                                                                <td className="px-4 py-2">
-                                                                    {
-                                                                        trx
-                                                                            .kategori_transaksi
-                                                                            ?.nama
-                                                                    }
+                                                                <td className="p-4 text-right align-middle">
+                                                                    <span
+                                                                        className={`font-semibold ${trx.tipe === 'pemasukan' ? 'text-emerald-600' : 'text-rose-600'}`}
+                                                                    >
+                                                                        {trx.tipe ===
+                                                                        'pemasukan'
+                                                                            ? '+'
+                                                                            : '-'}{' '}
+                                                                        Rp{' '}
+                                                                        {Number(
+                                                                            trx.nominal,
+                                                                        ).toLocaleString(
+                                                                            'id-ID',
+                                                                        )}
+                                                                    </span>
                                                                 </td>
-                                                                <td className="px-4 py-2">
-                                                                    {trx.tipe}
-                                                                </td>
-                                                                <td
-                                                                    className={`px-4 py-2 ${trx.tipe === 'pemasukan' ? 'text-green-600' : 'text-red-600'}`}
-                                                                >
-                                                                    Rp{' '}
-                                                                    {Number(
-                                                                        trx.nominal,
-                                                                    ).toLocaleString(
-                                                                        'id-ID',
-                                                                        {
-                                                                            maximumFractionDigits: 0,
-                                                                        },
-                                                                    )}
+                                                                <td className="p-4 text-right align-middle">
+                                                                    <DropdownMenu>
+                                                                        <DropdownMenuTrigger
+                                                                            asChild
+                                                                        >
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                className="h-8 w-8"
+                                                                            >
+                                                                                <MoreHorizontal className="h-4 w-4" />
+                                                                            </Button>
+                                                                        </DropdownMenuTrigger>
+                                                                        <DropdownMenuContent align="end">
+                                                                            <DropdownMenuLabel>
+                                                                                Aksi
+                                                                            </DropdownMenuLabel>
+                                                                            <DropdownMenuItem
+                                                                                onClick={() =>
+                                                                                    (window.location.href =
+                                                                                        '/laporan')
+                                                                                }
+                                                                            >
+                                                                                Lihat
+                                                                                Detail
+                                                                            </DropdownMenuItem>
+                                                                        </DropdownMenuContent>
+                                                                    </DropdownMenu>
                                                                 </td>
                                                             </tr>
                                                         ))
@@ -463,8 +811,12 @@ export default function Dashboard({
                         </Card>
                     </div>
 
-                    <div className="lg:col-span-1">
-                        <FinancialChart financialReport={financialReport} />
+                    {/* Chart Section */}
+                    <div className="lg:col-span-2">
+                        <FinancialChart
+                            financialReport={financialReport}
+                            transaksi={transaksi}
+                        />
                     </div>
                 </div>
             </div>

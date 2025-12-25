@@ -105,7 +105,7 @@ export default function Welcome({
                                     </Button>
                                 </Link>
                             )}
-                            <a href="#features">
+                            <Link href="/about">
                                 <Button
                                     variant="outline"
                                     size="lg"
@@ -113,7 +113,7 @@ export default function Welcome({
                                 >
                                     Pelajari Lebih Lanjut
                                 </Button>
-                            </a>
+                            </Link>
                         </div>
                     </div>
                 </section>
@@ -250,16 +250,11 @@ export default function Welcome({
                                 <div className="absolute -inset-4 rounded-2xl bg-gradient-to-tr from-green-200 to-blue-200 opacity-40 blur-2xl transition duration-1000 group-hover:opacity-60"></div>
                                 <div className="relative transform overflow-hidden rounded-2xl border border-slate-100 bg-white p-2 shadow-2xl transition duration-500 hover:scale-[1.01]">
                                     <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-xl bg-slate-50">
-                                        {/* Stylized placeholder for dashboard UI */}
-                                        <div className="absolute inset-0 bg-slate-100"></div>
                                         <img
-                                            src="/logo-bemstiaadabiah.png"
-                                            alt="BEM Logo"
-                                            className="z-10 h-32 w-32 object-contain opacity-20"
+                                            src="/dashboard-preview.png"
+                                            alt="Dashboard Preview"
+                                            className="h-full w-full object-cover"
                                         />
-                                        <div className="absolute z-10 text-3xl font-bold text-slate-300">
-                                            Dashboard Preview
-                                        </div>
                                     </div>
                                 </div>
                             </div>
