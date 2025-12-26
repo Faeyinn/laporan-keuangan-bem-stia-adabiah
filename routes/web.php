@@ -14,6 +14,18 @@ Route::get('/about', function () {
     return Inertia::render('about');
 })->name('about');
 
+Route::get('/privacy', function () {
+    return Inertia::render('privacy');
+})->name('privacy');
+
+Route::get('/terms', function () {
+    return Inertia::render('terms');
+})->name('terms');
+
+Route::get('/contact', function () {
+    return Inertia::render('contact');
+})->name('contact');
+
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
         $stats = \App\Models\Divisi::withSum(['transaksis as total_pemasukan' => function($query) {

@@ -1,3 +1,5 @@
+import { Link } from '@inertiajs/react';
+
 export function Footer() {
     const currentYear = new Date().getFullYear();
 
@@ -21,24 +23,24 @@ export function Footer() {
                         </div>
                     </div>
                     <div className="flex gap-8 text-sm font-medium">
-                        <a
-                            href="#"
+                        <Link
+                            href="/privacy"
                             className="transition-colors hover:text-white"
                         >
                             Privacy
-                        </a>
-                        <a
-                            href="#"
+                        </Link>
+                        <Link
+                            href="/terms"
                             className="transition-colors hover:text-white"
                         >
                             Terms
-                        </a>
-                        <a
-                            href="#"
+                        </Link>
+                        <Link
+                            href="/contact"
                             className="transition-colors hover:text-white"
                         >
                             Contact
-                        </a>
+                        </Link>
                     </div>
                     <p className="text-xs text-slate-500">
                         &copy; {currentYear} BEM KM STIA Adabiah. All rights
