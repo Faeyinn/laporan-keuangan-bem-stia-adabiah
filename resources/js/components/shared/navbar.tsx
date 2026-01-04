@@ -98,7 +98,7 @@ export function Navbar({
                                         Sistem Manajemen Keuangan
                                     </SheetDescription>
                                 </SheetHeader>
-                                <div className="mt-6 flex flex-col gap-4">
+                                <div className="mt-6 flex flex-col gap-4 px-4">
                                     {auth.user ? (
                                         <Link href={dashboard()}>
                                             <Button className="w-full bg-green-600 text-white shadow-md hover:bg-green-700">
@@ -111,7 +111,7 @@ export function Navbar({
                                             <Link href={login()}>
                                                 <Button
                                                     variant="outline"
-                                                    className="w-full justify-start text-slate-600"
+                                                    className="w-full text-slate-600"
                                                 >
                                                     Masuk
                                                 </Button>

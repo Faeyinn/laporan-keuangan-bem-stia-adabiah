@@ -29,7 +29,7 @@ export default function Welcome({
     const { auth } = usePage<SharedData>().props;
 
     return (
-        <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-green-100 selection:text-green-900">
+        <div className="min-h-screen overflow-x-hidden bg-slate-50 font-sans text-slate-900 selection:bg-green-100 selection:text-green-900">
             <Head title="Keuangan Transparan & Modern" />
 
             {/* Navbar */}
