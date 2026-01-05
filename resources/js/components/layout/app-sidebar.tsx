@@ -1,5 +1,5 @@
-import { NavMain } from '@/components/nav-main';
-import { NavUser } from '@/components/nav-user';
+import { NavMain } from '@/components/layout/nav-main';
+import { NavUser } from '@/components/layout/nav-user';
 import {
     Sidebar,
     SidebarContent,
@@ -13,7 +13,7 @@ import { dashboard } from '@/routes';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { BookOpen, Folder, LayoutGrid } from 'lucide-react';
-import AppLogo from './app-logo';
+import AppLogo from '@/components/common/app-logo';
 
 const mainNavItems: NavItem[] = [
     {
