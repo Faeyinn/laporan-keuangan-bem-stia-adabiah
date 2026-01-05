@@ -53,14 +53,7 @@ class TransaksiController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'divisi_id' => 'required|exists:divisis,id',
-            'kategori_transaksi_id' => 'required|exists:kategori_transaksi,id',
-            'tipe' => 'required|in:pemasukan,pengeluaran',
-            'nominal' => 'required|numeric',
-            'deskripsi' => 'nullable|string',
-            'tanggal' => 'required|date',
-        ]);
+        $data = $this->resolveData($request);
         $data['user_id'] = Auth::id();
         $transaksi = Transaksi::create($data);
         return response()->json($transaksi, 201);
@@ -69,17 +62,37 @@ class TransaksiController extends Controller
     public function update(Request $request, $id)
     {
         $transaksi = Transaksi::findOrFail($id);
-        $data = $request->validate([
-            'divisi_id' => 'required|exists:divisis,id',
+        $data = $this->resolveData($request);
+        
+        $transaksi->update($data);
+        return response()->json($transaksi);
+    }
+
+    private function resolveData(Request $request)
+    {
+        $rules = [
             'kategori_transaksi_id' => 'required|exists:kategori_transaksi,id',
             'tipe' => 'required|in:pemasukan,pengeluaran',
             'nominal' => 'required|numeric',
             'deskripsi' => 'nullable|string',
             'tanggal' => 'required|date',
-        ]);
-        
-        $transaksi->update($data);
-        return response()->json($transaksi);
+        ];
+
+        if ($request->input('divisi_id') === 'other') {
+            $rules['divisi_custom_name'] = 'required|string|max:255';
+        } else {
+            $rules['divisi_id'] = 'required|exists:divisis,id';
+        }
+
+        $data = $request->validate($rules);
+
+        if ($request->input('divisi_id') === 'other') {
+            $divisi = Divisi::firstOrCreate(['nama' => $data['divisi_custom_name']]);
+            $data['divisi_id'] = $divisi->id;
+            unset($data['divisi_custom_name']);
+        }
+
+        return $data;
     }
 
     public function destroy($id)

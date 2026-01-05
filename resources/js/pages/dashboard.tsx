@@ -123,15 +123,27 @@ function FinancialChart({
     const [selectedMonth, setSelectedMonth] = useState<string>(
         String(new Date().getMonth()),
     );
+    const [selectedYear, setSelectedYear] = useState<string>(
+        String(new Date().getFullYear()),
+    );
     const [chartImages, setChartImages] = useState<
         Record<string, HTMLImageElement>
     >({});
+
+    const years = useMemo(() => {
+        if (transaksi.length === 0) return [new Date().getFullYear()];
+        const years = new Set(
+            transaksi.map((t) => new Date(t.tanggal).getFullYear()),
+        );
+        years.add(new Date().getFullYear());
+        return Array.from(years).sort((a, b) => b - a);
+    }, [transaksi]);
 
     // Filter and process data based on selection
     const filteredData = useMemo(() => {
         // If we want to show specific month from transactions
         if (transaksi.length > 0) {
-            const currentYear = new Date().getFullYear(); // Assuming current year for simplicity, or could add year selector
+            const targetYear = parseInt(selectedYear);
             const targetMonth = parseInt(selectedMonth);
 
             // Group by division
@@ -144,7 +156,7 @@ function FinancialChart({
                 const date = new Date(t.tanggal);
                 if (
                     date.getMonth() === targetMonth &&
-                    date.getFullYear() === currentYear
+                    date.getFullYear() === targetYear
                 ) {
                     const divName = t.divisi?.nama || 'Lainnya';
                     const current = divisionMap.get(divName) || {
@@ -290,24 +302,44 @@ function FinancialChart({
                         <CardTitle className="text-base font-medium">
                             Laporan Per Divisi
                         </CardTitle>
-                        <Select
-                            value={selectedMonth}
-                            onValueChange={setSelectedMonth}
-                        >
-                            <SelectTrigger className="h-8 w-[120px]">
-                                <SelectValue placeholder="Pilih Bulan" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {months.map((month, index) => (
-                                    <SelectItem
-                                        key={index}
-                                        value={String(index)}
-                                    >
-                                        {month}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-2">
+                            <Select
+                                value={selectedYear}
+                                onValueChange={setSelectedYear}
+                            >
+                                <SelectTrigger className="h-8 w-[100px]">
+                                    <SelectValue placeholder="Tahun" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {years.map((year) => (
+                                        <SelectItem
+                                            key={year}
+                                            value={String(year)}
+                                        >
+                                            {year}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                value={selectedMonth}
+                                onValueChange={setSelectedMonth}
+                            >
+                                <SelectTrigger className="h-8 w-[120px]">
+                                    <SelectValue placeholder="Pilih Bulan" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {months.map((month, index) => (
+                                        <SelectItem
+                                            key={index}
+                                            value={String(index)}
+                                        >
+                                            {month}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                     <div className="flex self-start rounded-lg bg-muted p-1">
                         <button
@@ -406,7 +438,7 @@ function FinancialChart({
                 ) : (
                     <div className="py-10 text-center text-sm text-muted-foreground">
                         Belum ada data transaksi {type} pada bulan{' '}
-                        {months[parseInt(selectedMonth)]}.
+                        {months[parseInt(selectedMonth)]} {selectedYear}.
                     </div>
                 )}
             </CardContent>

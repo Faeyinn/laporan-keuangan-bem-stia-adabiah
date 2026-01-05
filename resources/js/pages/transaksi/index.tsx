@@ -723,6 +723,7 @@ export default function TransaksiIndex() {
 const defaultForm = {
     tipe: 'pengeluaran',
     divisi_id: '',
+    divisi_custom_name: '',
     kategori_transaksi_id: '',
     nominal: '',
     deskripsi: '',
@@ -747,6 +748,7 @@ function CreateTransaksiDialog({
             return {
                 tipe: trx.tipe,
                 divisi_id: trx.divisi_id.toString(),
+                divisi_custom_name: '',
                 kategori_transaksi_id: trx.kategori_transaksi_id.toString(),
                 nominal: trx.nominal.toString(),
                 deskripsi: trx.deskripsi || '',
@@ -912,12 +914,41 @@ function CreateTransaksiDialog({
                                             {d.nama}
                                         </SelectItem>
                                     ))}
+                                    <SelectItem value="other">
+                                        Lainnya...
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                             {errors.divisi_id && (
                                 <p className="text-xs text-red-500">
                                     {errors.divisi_id[0]}
                                 </p>
+                            )}
+                            {form.divisi_id === 'other' && (
+                                <div className="mt-2">
+                                    <Input
+                                        placeholder="Nama Divisi Baru"
+                                        value={form.divisi_custom_name}
+                                        onChange={(e) =>
+                                            setForm({
+                                                ...form,
+                                                divisi_custom_name:
+                                                    e.target.value,
+                                            })
+                                        }
+                                        className={
+                                            errors.divisi_custom_name
+                                                ? 'border-red-500'
+                                                : ''
+                                        }
+                                        required
+                                    />
+                                    {errors.divisi_custom_name && (
+                                        <p className="text-xs text-red-500">
+                                            {errors.divisi_custom_name[0]}
+                                        </p>
+                                    )}
+                                </div>
                             )}
                         </div>
                         <div className="grid gap-2">
@@ -1003,7 +1034,7 @@ function CreateTransaksiDialog({
                         )}
                     </div>
 
-                    <DialogFooter className="gap-2 sm:gap-0">
+                    <DialogFooter className="gap-2">
                         <Button
                             type="button"
                             variant="outline"
