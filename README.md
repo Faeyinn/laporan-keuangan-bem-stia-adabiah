@@ -24,7 +24,7 @@ Platform manajemen dan transparansi laporan keuangan digital modern untuk Badan 
 ### Backend
 
 - **Laravel 12**: Framework PHP modern untuk backend yang robust.
-- **SQLite/MySQL**: Database relasional.
+- **MySQL**: Database relasional.
 - **Laravel Fortify**: Backend autentikasi headless.
 
 ### Frontend
@@ -95,7 +95,7 @@ Ikuti langkah-langkah berikut untuk menjalankan proyek di komputer lokal Anda:
 Gunakan perintah berikut untuk menjalankan server development (Laravel & Vite secara bersamaan):
 
 ```bash
-npm run dev
+composer run dev
 ```
 
 Akses aplikasi di browser melalui: `http://localhost:8000`
