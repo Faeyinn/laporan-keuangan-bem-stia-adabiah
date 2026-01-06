@@ -16,8 +16,7 @@ Platform manajemen dan transparansi laporan keuangan digital modern untuk Badan 
     - 📄 Ekspor laporan ke **PDF** (menggunakan `laravel-dompdf`).
     - 📊 Ekspor data ke **Excel** (menggunakan `maatwebsite/excel`).
 - **Autentikasi Aman**: Sistem login robust menggunakan Laravel Fortify.
-- **Modern UI/UX**: Antarmuka responsif berbasis komponen React & Radix UI primitives.
-- **Mode Gelap/Terang**: Dukungan tema otomatis (Next Themes).
+- **Modern UI/UX**: Antarmuka responsif berbasis komponen React & Shadcn UI.
 
 ## 🛠️ Teknologi yang Digunakan
 
@@ -33,7 +32,7 @@ Platform manajemen dan transparansi laporan keuangan digital modern untuk Badan 
 - **Inertia.js 2.0**: Penghubung monolitik modern antara Laravel dan React.
 - **TypeScript**: Superset JavaScript untuk kode yang lebih aman (Typehub).
 - **Tailwind CSS 4.0**: Utility-first CSS framework untuk styling cepat.
-- **Shadcn UI / Radix UI**: Komponen UI aksesibel dan kustomisable.
+- **Shadcn UI**: Komponen UI aksesibel dan kustomisable.
 - **Vite 6**: Build tool generasi berikutnya yang super cepat.
 
 ## ⚙️ Persyaratan Sistem
