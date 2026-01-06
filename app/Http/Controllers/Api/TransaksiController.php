@@ -71,7 +71,6 @@ class TransaksiController extends Controller
     private function resolveData(Request $request)
     {
         $rules = [
-            'kategori_transaksi_id' => 'required|exists:kategori_transaksi,id',
             'tipe' => 'required|in:pemasukan,pengeluaran',
             'nominal' => 'required|numeric',
             'deskripsi' => 'nullable|string',
@@ -84,12 +83,27 @@ class TransaksiController extends Controller
             $rules['divisi_id'] = 'required|exists:divisis,id';
         }
 
+        if ($request->input('kategori_transaksi_id') === 'other') {
+            $rules['kategori_custom_name'] = 'required|string|max:255';
+        } else {
+            $rules['kategori_transaksi_id'] = 'required|exists:kategori_transaksi,id';
+        }
+
         $data = $request->validate($rules);
 
         if ($request->input('divisi_id') === 'other') {
             $divisi = Divisi::firstOrCreate(['nama' => $data['divisi_custom_name']]);
             $data['divisi_id'] = $divisi->id;
             unset($data['divisi_custom_name']);
+        }
+
+        if ($request->input('kategori_transaksi_id') === 'other') {
+            $kategori = KategoriTransaksi::firstOrCreate([
+                'nama' => $data['kategori_custom_name'],
+                'tipe' => $data['tipe']
+            ]);
+            $data['kategori_transaksi_id'] = $kategori->id;
+            unset($data['kategori_custom_name']);
         }
 
         return $data;

@@ -27,6 +27,7 @@ const defaultForm = {
     divisi_id: '',
     divisi_custom_name: '',
     kategori_transaksi_id: '',
+    kategori_custom_name: '',
     nominal: '',
     deskripsi: '',
     tanggal: new Date().toISOString().split('T')[0],
@@ -54,6 +55,7 @@ export function CreateTransaksiDialog({
                 divisi_id: trx.divisi_id.toString(),
                 divisi_custom_name: '',
                 kategori_transaksi_id: trx.kategori_transaksi_id.toString(),
+                kategori_custom_name: '',
                 nominal: trx.nominal.toString(),
                 deskripsi: trx.deskripsi || '',
                 tanggal: trx.tanggal,
@@ -287,12 +289,41 @@ export function CreateTransaksiDialog({
                                                 {k.nama}
                                             </SelectItem>
                                         ))}
+                                    <SelectItem value="other">
+                                        Lainnya...
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                             {errors.kategori_transaksi_id && (
                                 <p className="text-xs text-red-500">
                                     {errors.kategori_transaksi_id[0]}
                                 </p>
+                            )}
+                            {form.kategori_transaksi_id === 'other' && (
+                                <div className="mt-2">
+                                    <Input
+                                        placeholder="Nama Kategori Baru"
+                                        value={form.kategori_custom_name}
+                                        onChange={(e) =>
+                                            setForm({
+                                                ...form,
+                                                kategori_custom_name:
+                                                    e.target.value,
+                                            })
+                                        }
+                                        className={
+                                            errors.kategori_custom_name
+                                                ? 'border-red-500'
+                                                : ''
+                                        }
+                                        required
+                                    />
+                                    {errors.kategori_custom_name && (
+                                        <p className="text-xs text-red-500">
+                                            {errors.kategori_custom_name[0]}
+                                        </p>
+                                    )}
+                                </div>
                             )}
                         </div>
                     </div>

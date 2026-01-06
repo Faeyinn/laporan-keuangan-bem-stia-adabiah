@@ -9,6 +9,10 @@ export interface Transaction {
     };
     tipe: 'pemasukan' | 'pengeluaran';
     nominal: number;
+    deskripsi?: string;
+    user?: {
+        name: string;
+    };
 }
 
 export interface LaporanData {

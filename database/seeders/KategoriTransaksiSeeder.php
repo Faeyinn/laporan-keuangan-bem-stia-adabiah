@@ -20,7 +20,6 @@ class KategoriTransaksiSeeder extends Seeder
             'Sponsorship',
             'Dana Kegiatan',
             'Usaha Dana',
-            'Lain-lain'
         ];
 
         $pengeluaran = [
@@ -31,7 +30,6 @@ class KategoriTransaksiSeeder extends Seeder
             'Honorarium',
             'Inventaris',
             'Dana Sosial',
-            'Lain-lain'
         ];
 
         foreach ($pemasukan as $nama) {
